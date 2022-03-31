@@ -4,6 +4,7 @@ import { spawn } from 'child_process';
 const deploySmartContract = (fundRaiserAddress, campaignDuration) => {
   let promise = new Promise((resolve, reject) => {
     let fundProcess;
+    let withdrawProcess;
 
     const deployProcess = spawn(
       'brownie',
@@ -54,6 +55,32 @@ const deploySmartContract = (fundRaiserAddress, campaignDuration) => {
           );
           if (code === 0) {
             resolve();
+            withdrawProcess = spawn(
+              'brownie',
+              ['run', 'withdraw.py', '--network', 'kovan'],
+              {
+                cwd: '/home/marouane/webDev/solidity/brownie_fund_me/smart_contract/scripts',
+                env: {
+                  ...process.env,
+                  fundRaiserAddress,
+                },
+              },
+            );
+
+            withdrawProcess.stdout.on('data', function (data) {
+              console.log(`child process data: ${data}`);
+            });
+
+            withdrawProcess.on('error', (err) => {
+              console.log('withdraw process err:', err);
+            });
+
+            withdrawProcess.on('exit', function (code, signal) {
+              console.log(
+                'withdraw process exited with ' +
+                  `code ${code} and signal ${signal}`,
+              );
+            });
           } else {
             reject(new Error('Fund process exited with code:', code));
           }
